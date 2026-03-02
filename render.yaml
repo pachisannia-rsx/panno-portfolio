@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: panno-portfolio
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: "python3 server.py"
+    envVars:
+      - key: FINNHUB_API_KEY
+        sync: false

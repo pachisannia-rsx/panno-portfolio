@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portfolio News & Events</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div class="hero-top">
+          <h1>News & Upcoming Events</h1>
+          <nav class="nav-links" aria-label="Main navigation">
+            <a href="PANNO Portfolio.html">Portfolio</a>
+            <a href="news.html" class="active">News & Events</a>
+          </nav>
+        </div>
+        <p>
+          See quick links for each holding to check the latest headlines,
+          earnings dates, and market calendars.
+        </p>
+      </header>
+
+      <section class="news-summary">
+        <article class="metric-card">
+          <h2>Tracked Symbols</h2>
+          <p id="symbolCount">0</p>
+        </article>
+        <article class="metric-card">
+          <h2>Webull Symbols</h2>
+          <p id="webullCount">0</p>
+        </article>
+        <article class="metric-card">
+          <h2>Robinhood Symbols</h2>
+          <p id="robinhoodCount">0</p>
+        </article>
+      </section>
+
+      <section class="table-area">
+        <div class="table-header">
+          <h2>Portfolio Watchlist</h2>
+          <input
+            id="newsSearch"
+            type="text"
+            placeholder="Search symbols"
+            aria-label="Search symbols"
+          />
+        </div>
+        <div class="news-grid" id="newsGrid">
+          <article class="empty-card">
+            Upload files on the Portfolio page first. Then this page will show
+            symbol-specific news and event links.
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="news.js"></script>
+  </body>
+</html>

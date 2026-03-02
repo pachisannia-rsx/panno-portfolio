@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Family Portfolio Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div class="hero-top">
+          <h1>Portfolio Snapshot</h1>
+          <nav class="nav-links" aria-label="Main navigation">
+            <a href="PANNO Portfolio.html" class="active">Portfolio</a>
+            <a href="news.html">News & Events</a>
+          </nav>
+        </div>
+        <p>
+          Track Webull + Robinhood together. Live prices auto-update from
+          Finnhub using your private API key on the backend.
+        </p>
+      </header>
+
+      <section class="upload-grid">
+        <article class="upload-card">
+          <h2>Webull Portfolio</h2>
+          <label for="webullInput" class="upload-btn">Upload Webull Excel</label>
+          <input id="webullInput" type="file" accept=".xlsx,.xls" />
+          <p id="webullStatus" class="file-status">No file selected yet.</p>
+        </article>
+
+        <article class="upload-card">
+          <h2>Robinhood Portfolio</h2>
+          <label for="robinhoodInput" class="upload-btn">Upload Robinhood Excel</label>
+          <input id="robinhoodInput" type="file" accept=".xlsx,.xls" />
+          <p id="robinhoodStatus" class="file-status">No file selected yet.</p>
+        </article>
+      </section>
+
+      <section class="live-controls">
+        <button id="refreshPricesBtn" class="upload-btn" type="button">Refresh Live Prices</button>
+        <p id="liveStatus" class="file-status">Live prices not fetched yet.</p>
+      </section>
+
+      <section class="metrics" aria-live="polite">
+        <article class="metric-card">
+          <h2>Webull Value</h2>
+          <p id="webullTotal">$0.00</p>
+        </article>
+        <article class="metric-card">
+          <h2>Robinhood Value</h2>
+          <p id="robinhoodTotal">$0.00</p>
+        </article>
+        <article class="metric-card">
+          <h2>Combined Value</h2>
+          <p id="combinedTotal">$0.00</p>
+        </article>
+      </section>
+
+      <section class="metrics" aria-live="polite">
+        <article class="metric-card">
+          <h2>Total Cost Basis</h2>
+          <p id="totalCost">$0.00</p>
+        </article>
+        <article class="metric-card">
+          <h2>Total Gain / Loss</h2>
+          <p id="totalGain" class="neutral">$0.00</p>
+        </article>
+        <article class="metric-card">
+          <h2>Total Positions</h2>
+          <p id="totalPositions">0</p>
+        </article>
+      </section>
+
+      <section class="table-area">
+        <div class="table-header">
+          <div class="left-controls">
+            <h2>Holdings</h2>
+            <div class="portfolio-tabs" role="tablist" aria-label="Portfolio view">
+              <button class="tab active" data-portfolio="combined" role="tab">Combined</button>
+              <button class="tab" data-portfolio="webull" role="tab">Webull</button>
+              <button class="tab" data-portfolio="robinhood" role="tab">Robinhood</button>
+            </div>
+          </div>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Search symbol or name"
+            aria-label="Search holdings"
+          />
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-key="symbol">Symbol</th>
+                <th data-key="name">Name</th>
+                <th data-key="shares">Shares</th>
+                <th data-key="price">Live Price</th>
+                <th data-key="value">Market Value</th>
+                <th data-key="cost">Cost Basis</th>
+                <th data-key="gain">Gain/Loss</th>
+                <th data-key="source">Source</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsBody">
+              <tr>
+                <td colspan="8" class="empty">Upload one or both files to view holdings.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
