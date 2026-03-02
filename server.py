@@ -62,8 +62,24 @@ def fetch_finnhub_quotes(symbols, token):
                     prices[symbol] = round(float(candidate), 4)
                 else:
                     warnings.append(f"{symbol}: missing price fields")
-        except (urllib.error.URLError, json.JSONDecodeError):
-            warnings.append(f"{symbol}: request failed")
+        except urllib.error.HTTPError as err:
+            detail = f"HTTP {err.code}"
+            try:
+                body = err.read().decode("utf-8")
+                payload = json.loads(body)
+                error_msg = payload.get("error")
+                if isinstance(error_msg, str) and error_msg.strip():
+                    detail = f"{detail} {error_msg.strip()}"
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                pass
+            warnings.append(f"{symbol}: {detail}")
+            continue
+        except urllib.error.URLError as err:
+            reason = str(getattr(err, "reason", "")).strip()
+            warnings.append(f"{symbol}: request failed{f' ({reason})' if reason else ''}")
+            continue
+        except json.JSONDecodeError:
+            warnings.append(f"{symbol}: invalid JSON from provider")
             continue
 
     return prices, warnings
