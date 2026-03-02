@@ -308,6 +308,10 @@ async function refreshPrices() {
 
     const payload = await response.json();
     const prices = payload.prices || {};
+    const returnedSymbols = Object.keys(prices);
+    if (!returnedSymbols.length) {
+      throw new Error("No prices were returned. Check FINNHUB_API_KEY and symbol support.");
+    }
 
     applyPrices(webullRows, prices);
     applyPrices(robinhoodRows, prices);
@@ -315,7 +319,10 @@ async function refreshPrices() {
     render();
 
     const fetchedAt = payload.asOf ? new Date(payload.asOf) : new Date();
-    liveStatus.textContent = `Live prices updated at ${fetchedAt.toLocaleTimeString()}.`;
+    const allSymbols = uniqueSymbols([...webullRows, ...robinhoodRows]);
+    const missingCount = Math.max(0, allSymbols.length - returnedSymbols.length);
+    const warningText = missingCount ? ` (${missingCount} symbol${missingCount === 1 ? "" : "s"} unavailable)` : "";
+    liveStatus.textContent = `Live prices updated at ${fetchedAt.toLocaleTimeString()}${warningText}.`;
   } catch (err) {
     console.error(err);
     liveStatus.textContent = `Live pricing unavailable: ${err.message}`;

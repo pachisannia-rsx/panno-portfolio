@@ -50,6 +50,47 @@
         <p id="liveStatus" class="file-status">Live prices not fetched yet.</p>
       </section>
 
+      <section class="editor-card">
+        <h2>Add / Edit Holding</h2>
+        <form id="holdingForm" class="holding-form">
+          <label>
+            Select Existing (optional)
+            <select id="holdingSelect">
+              <option value="">Add New Holding</option>
+            </select>
+          </label>
+          <label>
+            Platform
+            <select id="platformSelect" required>
+              <option value="webull">Webull</option>
+              <option value="robinhood">Robinhood</option>
+            </select>
+          </label>
+          <label>
+            Symbol
+            <input id="symbolInput" type="text" placeholder="AAPL" required />
+          </label>
+          <label>
+            Name (optional)
+            <input id="nameInput" type="text" placeholder="Apple" />
+          </label>
+          <label>
+            Shares
+            <input id="sharesInput" type="number" step="0.0001" min="0" placeholder="10" required />
+          </label>
+          <label>
+            Buy Price
+            <input id="buyPriceInput" type="number" step="0.01" min="0" placeholder="150.00" required />
+          </label>
+          <div class="form-actions">
+            <button id="saveHoldingBtn" class="upload-btn" type="submit">Save Holding</button>
+            <button id="deleteHoldingBtn" class="tab" type="button">Delete Holding</button>
+            <button id="clearFormBtn" class="tab" type="button">Clear</button>
+          </div>
+          <p id="formStatus" class="file-status">Use this form to add or edit holdings anytime.</p>
+        </form>
+      </section>
+
       <section class="metrics" aria-live="polite">
         <article class="metric-card">
           <h2>Webull Value</h2>
@@ -122,6 +163,6 @@
       </section>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260302-1"></script>
   </body>
 </html>

@@ -38,6 +38,7 @@ def load_env_file(path: Path) -> None:
 
 def fetch_finnhub_quotes(symbols, token):
     prices = {}
+    warnings = []
     for symbol in symbols:
         symbol = symbol.strip().upper()
         if not symbol:
@@ -50,13 +51,22 @@ def fetch_finnhub_quotes(symbols, token):
             with urllib.request.urlopen(url, timeout=10) as resp:
                 body = resp.read().decode("utf-8")
                 data = json.loads(body)
+                error_msg = data.get("error")
+                if isinstance(error_msg, str) and error_msg.strip():
+                    warnings.append(f"{symbol}: {error_msg.strip()}")
+                    continue
                 current = data.get("c")
-                if isinstance(current, (int, float)) and current > 0:
-                    prices[symbol] = round(float(current), 4)
+                prev_close = data.get("pc")
+                candidate = current if isinstance(current, (int, float)) and current > 0 else prev_close
+                if isinstance(candidate, (int, float)) and candidate > 0:
+                    prices[symbol] = round(float(candidate), 4)
+                else:
+                    warnings.append(f"{symbol}: missing price fields")
         except (urllib.error.URLError, json.JSONDecodeError):
+            warnings.append(f"{symbol}: request failed")
             continue
 
-    return prices
+    return prices, warnings
 
 
 class PortfolioHandler(SimpleHTTPRequestHandler):
@@ -83,10 +93,15 @@ class PortfolioHandler(SimpleHTTPRequestHandler):
             self.send_json(400, {"error": "Provide symbols query param, e.g. ?symbols=AAPL,SPY"})
             return
 
-        prices = fetch_finnhub_quotes(symbols, token)
+        prices, warnings = fetch_finnhub_quotes(symbols, token)
+        if not prices:
+            detail = warnings[0] if warnings else "Finnhub returned no prices"
+            self.send_json(502, {"error": f"Live pricing unavailable ({detail})", "warnings": warnings})
+            return
         payload = {
             "prices": prices,
             "count": len(prices),
+            "warnings": warnings,
             "asOf": datetime.now(timezone.utc).isoformat(),
         }
         self.send_json(200, payload)
