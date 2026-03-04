@@ -12,7 +12,14 @@ const combinedTotalEl = document.getElementById("combinedTotal");
 const totalCostEl = document.getElementById("totalCost");
 const totalGainEl = document.getElementById("totalGain");
 const totalPositionsEl = document.getElementById("totalPositions");
-const tabs = Array.from(document.querySelectorAll(".tab"));
+let chartTitleEl;
+let chartChangeEl;
+let chartStartLabelEl;
+let chartEndLabelEl;
+let chartLinePathEl;
+let chartFillPathEl;
+let chartEmptyEl;
+const tabs = Array.from(document.querySelectorAll(".portfolio-tabs .tab"));
 
 const STORAGE_KEY = "family-portfolio-data";
 
@@ -33,7 +40,9 @@ let currentPortfolio = "combined";
 let sortKey = "symbol";
 let sortDir = "asc";
 let autoRefreshTimer = null;
+let valueHistory = { combined: [], webull: [], robinhood: [] };
 
+ensureChartElements();
 loadFromStorageOrDefaults();
 wireUpload(webullInput, "webull");
 wireUpload(robinhoodInput, "robinhood");
@@ -222,6 +231,7 @@ function render() {
   const visibleRows = getFilteredAndSorted();
   renderTable(visibleRows);
   updateMetrics();
+  renderPerformanceChart();
 }
 
 function renderTable(tableRows) {
@@ -273,12 +283,13 @@ function updateMetrics() {
 
   totalGainEl.classList.remove("up", "down", "neutral");
   totalGainEl.classList.add(combinedGain > 0 ? "up" : combinedGain < 0 ? "down" : "neutral");
+  captureHistorySnapshot({ webullValue, robinhoodValue, combinedValue });
 }
 
 async function refreshPrices() {
   if (window.location.protocol === "file:") {
     liveStatus.textContent =
-      "You opened the file directly. Run: python3 server.py, then open http://127.0.0.1:8000/index.html";
+      "You opened the file directly. Run: python3 server.py, then open http://127.0.0.1:8000/ (or /portfolio.html).";
     return;
   }
 
@@ -381,10 +392,107 @@ function applyPrices(rows, prices) {
   });
 }
 
+function captureHistorySnapshot(values) {
+  const minuteTs = Math.floor(Date.now() / 60000) * 60000;
+  upsertHistoryPoint("webull", minuteTs, values.webullValue);
+  upsertHistoryPoint("robinhood", minuteTs, values.robinhoodValue);
+  upsertHistoryPoint("combined", minuteTs, values.combinedValue);
+  persistData();
+}
+
+function upsertHistoryPoint(portfolioKey, ts, value) {
+  if (!Number.isFinite(value)) return;
+
+  const history = valueHistory[portfolioKey] || [];
+  const last = history[history.length - 1];
+  if (last && last.ts === ts) {
+    last.value = value;
+  } else {
+    history.push({ ts, value });
+  }
+
+  const maxPoints = 360;
+  if (history.length > maxPoints) {
+    history.splice(0, history.length - maxPoints);
+  }
+
+  valueHistory[portfolioKey] = history;
+}
+
+function renderPerformanceChart() {
+  if (!chartTitleEl || !chartChangeEl || !chartStartLabelEl || !chartEndLabelEl || !chartLinePathEl || !chartFillPathEl || !chartEmptyEl) {
+    return;
+  }
+
+  const series = valueHistory[currentPortfolio] || [];
+  const chartName = currentPortfolio === "combined" ? "Combined" : currentPortfolio === "webull" ? "Webull" : "Robinhood";
+  chartTitleEl.textContent = `${chartName} Performance`;
+
+  if (series.length < 2) {
+    chartLinePathEl.setAttribute("d", "");
+    chartFillPathEl.setAttribute("d", "");
+    chartEmptyEl.style.display = "block";
+    chartChangeEl.textContent = "$0.00 (0.00%)";
+    chartChangeEl.classList.remove("up", "down", "neutral");
+    chartChangeEl.classList.add("neutral");
+    chartStartLabelEl.textContent = "--";
+    chartEndLabelEl.textContent = "--";
+    return;
+  }
+
+  chartEmptyEl.style.display = "none";
+
+  const width = 1000;
+  const topPadding = 18;
+  const bottom = 296;
+  const chartHeight = bottom - topPadding;
+  const values = series.map((point) => Number(point.value) || 0);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const range = maxValue - minValue || Math.max(1, Math.abs(maxValue) * 0.01);
+
+  const coords = series.map((point, index) => {
+    const x = (index / (series.length - 1)) * width;
+    const y = bottom - ((point.value - minValue) / range) * chartHeight;
+    return { x, y };
+  });
+
+  const linePath = coords
+    .map((coord, index) => `${index === 0 ? "M" : "L"} ${coord.x.toFixed(2)} ${coord.y.toFixed(2)}`)
+    .join(" ");
+  const fillPath = `${linePath} L ${coords[coords.length - 1].x.toFixed(2)} ${bottom} L ${coords[0].x.toFixed(2)} ${bottom} Z`;
+
+  chartLinePathEl.setAttribute("d", linePath);
+  chartFillPathEl.setAttribute("d", fillPath);
+
+  const startValue = series[0].value;
+  const endValue = series[series.length - 1].value;
+  const delta = endValue - startValue;
+  const pct = startValue ? (delta / startValue) * 100 : 0;
+
+  chartChangeEl.textContent = `${formatCurrency(delta)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)`;
+  chartChangeEl.classList.remove("up", "down", "neutral");
+  chartChangeEl.classList.add(delta > 0 ? "up" : delta < 0 ? "down" : "neutral");
+
+  chartStartLabelEl.textContent = formatChartTime(series[0].ts);
+  chartEndLabelEl.textContent = formatChartTime(series[series.length - 1].ts);
+}
+
+function formatChartTime(ts) {
+  const date = new Date(ts);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function persistData() {
   const payload = {
     webullRows,
     robinhoodRows,
+    valueHistory,
     updatedAt: new Date().toISOString(),
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -407,6 +515,7 @@ function loadFromStorageOrDefaults() {
     robinhoodRows = Array.isArray(parsed.robinhoodRows)
       ? parsed.robinhoodRows
       : seedRows(DEFAULT_ROBINHOOD, "robinhood");
+    valueHistory = normalizeHistory(parsed.valueHistory);
 
     if (webullRows.length) {
       webullStatus.textContent = `Loaded ${webullRows.length} holdings from saved data.`;
@@ -431,4 +540,70 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function normalizeHistory(rawHistory) {
+  const empty = { combined: [], webull: [], robinhood: [] };
+  if (!rawHistory || typeof rawHistory !== "object") return empty;
+
+  const sanitize = (rows) => {
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .map((point) => ({
+        ts: Number(point.ts) || 0,
+        value: Number(point.value) || 0,
+      }))
+      .filter((point) => point.ts > 0 && Number.isFinite(point.value));
+  };
+
+  return {
+    combined: sanitize(rawHistory.combined),
+    webull: sanitize(rawHistory.webull),
+    robinhood: sanitize(rawHistory.robinhood),
+  };
+}
+
+function ensureChartElements() {
+  let chartCard = document.querySelector(".chart-card");
+  if (!chartCard) {
+    const tableArea = document.querySelector(".table-area");
+    const page = document.querySelector(".page");
+    if (tableArea && page) {
+      chartCard = document.createElement("section");
+      chartCard.className = "chart-card";
+      chartCard.setAttribute("aria-live", "polite");
+      chartCard.innerHTML = `
+        <div class="chart-header">
+          <h2 id="chartTitle">Combined Performance</h2>
+          <p id="chartChange" class="neutral">$0.00 (0.00%)</p>
+        </div>
+        <div class="chart-stage">
+          <svg id="portfolioChart" viewBox="0 0 1000 320" preserveAspectRatio="none" role="img" aria-label="Portfolio value chart">
+            <defs>
+              <linearGradient id="chartFillGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#14a363" stop-opacity="0.28"></stop>
+                <stop offset="100%" stop-color="#14a363" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+            <path id="chartFillPath" fill="url(#chartFillGradient)"></path>
+            <path id="chartLinePath" fill="none" stroke="#14a363" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <p id="chartEmpty" class="chart-empty">Collecting value history. Use Refresh Live Prices to build the trend line.</p>
+        </div>
+        <div class="chart-footer">
+          <span id="chartStartLabel">--</span>
+          <span id="chartEndLabel">--</span>
+        </div>
+      `;
+      page.insertBefore(chartCard, tableArea);
+    }
+  }
+
+  chartTitleEl = document.getElementById("chartTitle");
+  chartChangeEl = document.getElementById("chartChange");
+  chartStartLabelEl = document.getElementById("chartStartLabel");
+  chartEndLabelEl = document.getElementById("chartEndLabel");
+  chartLinePathEl = document.getElementById("chartLinePath");
+  chartFillPathEl = document.getElementById("chartFillPath");
+  chartEmptyEl = document.getElementById("chartEmpty");
 }

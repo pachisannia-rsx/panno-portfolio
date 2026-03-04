@@ -24,10 +24,11 @@ python3 server.py
 ```
 
 Then open:
-- http://127.0.0.1:8000/PANNO%20Portfolio.html
+- http://127.0.0.1:8000/
+- http://127.0.0.1:8000/portfolio.html
 - http://127.0.0.1:8000/news.html
 
-Important: do not open `PANNO Portfolio.html` directly from Finder as a `file:///...` URL.
+Important: do not open `portfolio.html` directly from Finder as a `file:///...` URL.
 Live prices only work when the backend server is running and you open the `http://127.0.0.1:8000/...` URL.
 
 ## 3) Live pricing
@@ -46,6 +47,8 @@ Live prices only work when the backend server is running and you open the `http:
 4. In Render environment variables, set:
    - `FINNHUB_API_KEY` = your key
 5. Deploy.
-6. Open your new public URL (something like `https://panno-portfolio.onrender.com/PANNO%20Portfolio.html`) and share it.
+6. Open your public URL and share it:
+   - `https://panno-portfolio.onrender.com/` (recommended)
+   - `https://panno-portfolio.onrender.com/portfolio.html`
 
 After deployment, he can open that URL anytime without running your local computer.
